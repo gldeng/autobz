@@ -109,10 +109,15 @@ class FYBException(Exception):
 
 
 def place_fyb_sell(price, qty):
+    start_timestamp = time.time()
     fyb_order_id = ''
+    filled = False
     try:
         res = fyb.place_order(qty=qty, price=price, side='S')
+        # Filled return json: {"msg": "Order executed and filled successfully!", "pending_oid": "", "error": 0}
+        # Pending return json: {"msg": "", "pending_oid": "2837214", "error": 0}
         fyb_order_id = str(res.json()['pending_oid'])
+        filled = 'filled' in str(res.json()['msg']) and fyb_order_id == ""
         if res.json()['error'] != 0:
             raise FYBException(res.json()['error'])
     except Exception as e:
@@ -144,6 +149,9 @@ def place_fyb_sell(price, qty):
         time.sleep(1)
         res = fyb.get_order_history()
         history = res.json()
+        if history[0]['date_created'] >= time.time() - 60.0 and fyb_order_id == "":
+            # give 1 min buffer
+            fyb_order_id = str(history[0]['ticket'])
         orders = [x for x in res.json()['orders'] if str(x['ticket']) == fyb_order_id]
         total_qty = float(sum([float(x['qty'].replace('BTC', '')) for x in orders]))
         if res.json()['error'] != 0:
