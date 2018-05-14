@@ -9,7 +9,7 @@ install_requires = [
 
 setup(
     name="autobz" ,
-    version="0.1.0" ,
+    version="0.1.1" ,
     description="autobz",
     license="MIT",
     packages=find_packages(),
