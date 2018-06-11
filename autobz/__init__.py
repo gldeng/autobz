@@ -130,12 +130,13 @@ def place_fyb_sell(price, qty):
         try:
             res = fyb.get_pending_orders()
             pending = res.json()
-            for order in res.json()['orders']:
-                if str(order['ticket']) == fyb_order_id:
-                    done_qty -= float(order['qty'])
-                    # cancel remaining
-                    time.sleep(1)
-                    cancel = fyb.cancel_pending_orders(fyb_order_id).json()
+            if res.json()['orders'] is not None:
+                for order in res.json()['orders']:
+                    if str(order['ticket']) == fyb_order_id:
+                        done_qty -= float(order['qty'])
+                        # cancel remaining
+                        time.sleep(1)
+                        cancel = fyb.cancel_pending_orders(fyb_order_id).json()
             if res.json()['error'] != 0:
                 raise FYBException(res.json()['error'])
             if cancel and cancel.get('error') != 0:
@@ -148,11 +149,11 @@ def place_fyb_sell(price, qty):
     try:
         time.sleep(1)
         res = fyb.get_order_history()
-        history = res.json()
+        history = res.json()['orders']
         if history[0]['date_created'] >= time.time() - 60.0 and fyb_order_id == "":
             # give 1 min buffer
             fyb_order_id = str(history[0]['ticket'])
-        orders = [x for x in res.json()['orders'] if str(x['ticket']) == fyb_order_id]
+        orders = [x for x in history if str(x['ticket']) == fyb_order_id]
         total_qty = float(sum([float(x['qty'].replace('BTC', '')) for x in orders]))
         if res.json()['error'] != 0:
             raise FYBException(res.json()['error'])
